@@ -3,8 +3,6 @@ export type User = {
   email: string;
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export async function fetchUsers() {
   return fetch("http://localhost:3001/users").then(
     (res) => res.json() as Promise<User[]>,
@@ -43,28 +41,34 @@ export type PaginatedResponse<T> = {
   last: number;
   pages: number;
   items: number;
+  page: number;
 };
 
 export function fetchTasks({
   page = 1,
-  perPage = 10,
+  per_page = 10,
   sort = { createdAt: "asc" },
   filters,
 }: {
   page?: number;
-  perPage?: number;
+  per_page?: number;
   filters?: {
     userId?: string;
+    title?: string;
   };
   sort?: {
     createdAt: "asc" | "desc";
   };
 }) {
   return fetch(
-    `http://localhost:3001/tasks?_page=${page}&_per_page=${perPage}&_sort=${
+    `http://localhost:3001/tasks?_page=${page}&_per_page=${per_page}&_sort=${
       sort.createdAt === "asc" ? "createdAt" : "-createdAt"
-    }&userId=${filters?.userId ?? ""}`,
-  ).then((res) => res.json() as Promise<PaginatedResponse<Task>>);
+    }&userId=${filters?.userId}${
+      filters?.title ? `&title=${filters.title}` : ""
+    }`,
+  )
+    .then((res) => res.json() as Promise<PaginatedResponse<Task>>)
+    .then((r) => ({ ...r, page }));
 }
 
 export function createTask(task: Omit<Task, "id" | "createdAt">) {
